@@ -1,0 +1,60 @@
+---
+title: "PCA - NASA"
+author: "Hitendra Parmar"
+date: "December 11, 2018"
+output: rmarkdown::github_document
+---
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+
+nasa_kc1 <- read.csv("kc1.csv")
+nasa <- nasa_kc1[,c(6:10,12)]
+colnames(nasa) <- c("volume","prog_length","difficulty","intelligence","effort","time")
+
+# Go through each row and determine if a value is zero
+row_sub <- apply(nasa, 1, function(row) all(row !=0))
+nasa <- nasa[row_sub, ]
+nasa <- nasa[sample(nrow(nasa), 1000), ] # Randomly selecting 1000 rows for PCA Analysis
+
+# Calculating Outlier Scores
+library(DMwR)
+outlier.scores <- lofactor(nasa, k=3)
+
+# Top 5 outliers
+(outliers <- order(outlier.scores, decreasing=T)[1:100])
+nasa <- nasa[-c(outliers), ]
+
+# Eigen values of the covariance matrix
+eig <- eigen(cov(nasa)) # These eigen values explain how much variance there is in the data in the direction of eigen vectors.
+
+# Projected data
+proj_y <- (scale(nasa, center=T, scale=F)) %*% eig$vectors 
+par(mfrow=c(2,3))
+plot(proj_y[,1],proj_y[,2],pch=c(rep(1,100),rep(3,100)),
+                 col=c(rep("blue",100),rep("red",100)),
+                 main="PC2 vs. PC1",
+                 xlab="PC1",ylab="PC2")
+plot(proj_y[,2],proj_y[,3],pch=c(rep(1,100),rep(3,100)),
+                 col=c(rep("blue",100),rep("red",100)),
+                 main="PC3 vs. PC2",
+                 xlab="PC2",ylab="PC3")
+plot(proj_y[,1],proj_y[,3],pch=c(rep(1,100),rep(3,100)),
+                 col=c(rep("blue",100),rep("red",100)),
+                 main="PC3 vs. PC1",
+                 xlab="PC1",ylab="PC3")
+
+# Plotting the eigen vectors
+barplot(eig$values,names.arg=1:6,xlab="Index",ylab="Lambda")
+plot(eig$values/sum(eig$values),type="o",xlab="Index",ylab="Variation Explained")
+
+acc.sums <- rep(NA,ncol(nasa))
+for(i in 1:ncol(nasa)){
+	acc.sums[i] <- sum(e$values[1:i])
+}
+plot(acc.sums/sum(e$values),type="o",xlab="Index",ylab="Accumulative Variation Explained")
+
+# We can see from the variation plot that much of the variation was explained by the last plot. From the 3 Principal
+# Component plots, we see that PC1 and PC2 seem to be somewhat separated but PC3 seems to be clustered across both PC1
+# and PC2. This shows that PC3 does not seem to be of much use.
+```
