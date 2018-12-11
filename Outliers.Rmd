@@ -1,0 +1,41 @@
+---
+title: "Outlier Detection"
+author: "Hitendra Parmar"
+date: "December 10, 2018"
+output: rmarkdown::github_document
+---
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+# Data Cleaning
+dow_jones <- read.table("dow_jones_index.data", dec=",", sep = ",", header = TRUE, stringsAsFactors = FALSE)
+stocks <- dow_jones[,4:7]
+stocks$open <- as.numeric(gsub("\\$", "", stocks$open))
+stocks$high <- as.numeric(gsub("\\$", "", stocks$high))
+stocks$low <- as.numeric(gsub("\\$", "", stocks$low))
+stocks$close <- as.numeric(gsub("\\$", "", stocks$close))
+
+# Calculating Outlier Scores
+library(DMwR)
+outlier.scores <- lofactor(stocks, k=3)
+plot(density(outlier.scores))
+
+# Top 5 outliers
+(outliers <- order(outlier.scores, decreasing=T)[1:5])
+
+n <- nrow(stocks)
+labels <- 1:n
+labels[-outliers] <- "."
+biplot(prcomp(stocks), cex=.8, xlabs=labels)
+
+pch <- rep(".", n)
+pch[outliers] <- "+"
+col <- rep("black", n)
+col[outliers] <- "red"
+pairs(stocks, pch=pch, col=col)
+
+# We see that stock prices when they open, close are at their highest, and their lowest have heavy correlation between
+# each other, with very few outliers present, indicated by a '+'.Dots in the biplot show normal distribution of stocks
+# across both Princial Components.
+
+```
